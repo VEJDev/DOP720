@@ -1,3 +1,7 @@
+import sys
+print("__file__:", __file__)
+print("sys.path:", sys.path)
+
 from sqlalchemy import Column, String, Integer, Text, LargeBinary, create_engine, DateTime
 import os
 from sqlalchemy.orm import declarative_base
@@ -14,13 +18,15 @@ class Procurement(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     status = Column(Text, nullable=False)
-    name = Column(Text, nullable=False)
+    text = Column(Text, nullable=False)
+    link = Column(Text, nullable=False)
     customer = Column(Text, nullable=False)
     deadline = Column(DateTime, nullable=False)
 
-    def __init__(self, status, name, customer, deadline):
+    def __init__(self, status, text, link, customer, deadline):
         self.status = status
-        self.name = name
+        self.text = text
+        self.link = link
         self.customer = customer
         self.deadline = deadline
 
