@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>DOP720</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/template.css') }}">
+    </head>
+    <body>
+        {% include "header.html" %}
+        <div class="container-center" style="padding: 20px;">
+            <div class="container-blue" style="width: 320px;">
+                <h2 style="text-decoration: underline;">Lietotājvārds</h2>
+                <button id="logout-btn" class="regular-btn">Iziet</button>
+            </div>
+            <div class="container-red" style="width: 320px;">
+                <h2>Darbības ar Profilu</h2>
+                <p>Ja uzņēmuma intereses mainās, ir iespēja pārmācīt modeli, lai tas neņemtu vērā iepriekšējos interesējošos iepirkumus.</p>
+                <button id="reset-btn" class="regular-btn">Pārmācīt Modeli</button>
+                <p>Dzēšot kontu, to nebūs iespējams atjaunot, neizveidojot jaunu kontu</p>
+                <button id="delete-btn" class="regular-btn">Dzēst Kontu</button>
+            </div>
+        </div>
+    </body>
+</html>

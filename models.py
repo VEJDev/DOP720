@@ -1,10 +1,6 @@
-import sys
-print("__file__:", __file__)
-print("sys.path:", sys.path)
-
-from sqlalchemy import Column, String, Integer, Text, LargeBinary, create_engine, DateTime
+from sqlalchemy import Column, String, Integer, Text, LargeBinary, create_engine, DateTime, ForeignKey
 import os
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 
@@ -23,6 +19,8 @@ class Procurement(Base):
     customer = Column(Text, nullable=False)
     deadline = Column(DateTime, nullable=False)
 
+    selected_by_users_link = relationship("UserProcurement", back_populates="procurement")
+
     def __init__(self, status, text, link, customer, deadline):
         self.status = status
         self.text = text
@@ -40,8 +38,24 @@ class User(Base):
     password = Column(Text, nullable=False)
     model = Column(LargeBinary, nullable=True)
 
+    selected_procurements_link = relationship("UserProcurement", back_populates="user")
+
     def __init__(self, username, email, password, model):
         self.username = username
         self.email = email
         self.password = password
         self.model = model
+
+# Kad lietotājs apmāca modeli, šeit būtu jāpiefiksē kurus iepirkumus vairs nebūtu jārāda apmācības sadaļā.
+class UserProcurement(Base):
+    __tablename__ = "UserProcurements"
+
+    user_id = Column(Integer, ForeignKey("Users.id"), primary_key=True)
+    procurement_id = Column(Integer, ForeignKey("Procurements.id"), primary_key=True)
+
+    user = relationship("User", back_populates="selected_procurements_link")
+    procurement = relationship("Procurement", back_populates="selected_by_users_link")
+
+    def __init__(self, user_id, procurement_id):
+        self.user_id = user_id
+        self.procurement_id = procurement_id

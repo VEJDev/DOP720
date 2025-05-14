@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, redirect, url_for
 import os
 from models import Procurement
 from models import init_db
@@ -11,16 +11,27 @@ db = SQLAlchemy(app)
 
 @app.route('/')
 def home():
-    records = db.session.query(Procurement).all()
+    return redirect(url_for('login'))
+
+@app.route('/login')
+def login():
     return render_template('login.html')
 
-@app.route('/register', methods=['POST'])
+@app.route('/register')
 def register():
-    data = request.json
-    username = data.get('username')
-    email = data.get('email')
-    password = data.get('password')
-    return render_template('login.html')
+    return render_template('register.html')
+
+@app.route('/training')
+def training():
+    return render_template('training.html')
+
+@app.route('/suggestions')
+def suggestions():
+    return render_template('suggestions.html')
+
+@app.route('/profile')
+def profile():
+    return render_template('profile.html')
 
 if __name__ == '__main__':
     init_db()
