@@ -10,40 +10,39 @@ import tensorflow as tf # pip install tensorflow
 # Nav testēts
 class MachineLearning():
     def __init__(self, database, application):
-        global db, app, encoder
+        global db, app, model_preset
         db = database
         app = application
 
+    def train(user_id, train_data):
         with app.app_context():
-            if not os.path.exists("encoder_model"):
+            if getModel(user_id) is not None:
                 procurements = db.session.query(Procurement.text, Procurement.customer).all()
                 all_records = [f"{text} {customer}" for text, customer in procurements]
                 encoder = tf.keras.layers.TextVectorization(max_tokens=2000)
                 encoder.adapt(all_records)
-                tf.keras.models.save_model(encoder, 'encoder_model')
-            encoder = tf.keras.models.load_model('encoder_model')
-
-    def train(user_id, train_data):
-        if getModel(user_id) is not None:
-            model = tf.keras.Sequential([
-                encoder,
-                tf.keras.layers.Embedding(
-                    input_dim=len(encoder.get_vocabulary()),
-                    output_dim=32,
-                    mask_zero=True
-                ),
-                tf.keras.layers.LSTM(32),
-                tf.keras.layers.Dense(32, activation='relu'),
-                tf.keras.layers.Dropout(0.4),
-                tf.keras.layers.Dense(1, activation='sigmoid')
-            ])
-            model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.005),
-                loss=tf.keras.losses.BinaryCrossentropy(),
-                metrics=['accuracy'])
-            saveModel(user_id, model)
-        model = getModel(user_id)
-        model.fit(train_data, epochs=5)
-        saveModel(user_id, model)
+                model = tf.keras.Sequential([
+                    encoder,
+                    tf.keras.layers.Embedding(
+                        input_dim=len(encoder.get_vocabulary()),
+                        output_dim=32,
+                        mask_zero=True
+                    ),
+                    tf.keras.layers.LSTM(32),
+                    tf.keras.layers.Dense(32, activation='relu'),
+                    tf.keras.layers.Dropout(0.4),
+                    tf.keras.layers.Dense(1, activation='sigmoid')
+                ])
+                model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.005),
+                    loss=tf.keras.losses.BinaryCrossentropy(),
+                    metrics=['accuracy'])
+                
+                model.fit(train_data, epochs=5)
+                saveModel(user_id, model)
+            else:
+                model = getModel(user_id)
+                model.fit(train_data, epochs=5)
+                saveModel(user_id, model)
 
     def predict(user_id, procurement_text):
         model = getModel(user_id)
