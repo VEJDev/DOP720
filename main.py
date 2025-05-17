@@ -1,13 +1,17 @@
-from flask import Flask, request, redirect, url_for
+from flask import Flask, request, redirect, url_for # pip install Flask
 import os
 from models import Procurement
 from models import init_db
-from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy # pip install Flask-SQLAlchemy
 from flask import render_template
+from scraper import ProcurementScraper
+from ml import MachineLearning
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///{}".format(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.db"))
 db = SQLAlchemy(app)
+scraper = ProcurementScraper(db, app)
+ml = MachineLearning(db, app)
 
 @app.route('/')
 def home():
@@ -36,4 +40,4 @@ def profile():
 if __name__ == '__main__':
     init_db()
     app.run()
-    #scraper.run()
+    scraper.run()

@@ -17,7 +17,7 @@ class Procurement(Base):
     text = Column(Text, nullable=False)
     link = Column(Text, nullable=False)
     customer = Column(Text, nullable=False)
-    deadline = Column(DateTime, nullable=False)
+    deadline = Column(DateTime)
 
     selected_by_users_link = relationship("UserProcurement", back_populates="procurement")
 

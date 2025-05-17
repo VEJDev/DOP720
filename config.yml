@@ -1,0 +1,4 @@
+scraper:
+  geckodriver_path: C:\Program Files\Mozilla Firefox\geckodriver.exe
+  last_scrape: 0
+  use: false
