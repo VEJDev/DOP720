@@ -2,12 +2,11 @@ import tempfile
 import numpy as np
 import os
 import pickle
+import stanza
 
 from models import User, Procurement
 
 import tensorflow as tf
-# importē no tf-keras, ne no keras, ja gribi kopā ar BERT
-# pip install huggingface_hub[hf_xet], priekš labākas veiktspējas
 from tf_keras import layers, models, optimizers, losses
 from transformers import BertTokenizer, TFBertModel
 
@@ -22,8 +21,20 @@ class MachineLearning:
         self.tokenizer = BertTokenizer.from_pretrained(self.model_name)
         self.bert_model = TFBertModel.from_pretrained(self.model_name)
 
+        # Setup Stanza for Latvian lemmatization (without mwt)
+        stanza.download("lv")  # only needs to be done once
+        self.nlp = stanza.Pipeline(
+            lang='lv', processors='tokenize,pos,lemma', use_gpu=False)
+
+    def lemmatize(self, text):
+        doc = self.nlp(text)
+        lemmas = [
+            word.lemma for sentence in doc.sentences for word in sentence.words]
+        return " ".join(lemmas)
+
     def get_bert_embeddings(self, texts):
-        inputs = self.tokenizer(texts, padding=True,
+        lemmatized_texts = [self.lemmatize(t) for t in texts]
+        inputs = self.tokenizer(lemmatized_texts, padding=True,
                                 truncation=True, return_tensors="tf")
         outputs = self.bert_model(inputs)
         embeddings = tf.reduce_mean(outputs.last_hidden_state, axis=1)
@@ -37,7 +48,7 @@ class MachineLearning:
 
             negative = self.db.session.query(Procurement.text).filter(
                 ~Procurement.id.in_(liked_ids)
-            ).limit(len(positive)).all()
+            ).limit(11).all()#strādā vislabāk kad negatīvie iepirkumi ir nedaudz vairāk par pozitīvajiem(ieinteresējošajiem)
 
             X = [text for (text,) in positive + negative]
             y = np.array([1] * len(positive) + [0] * len(negative))
@@ -50,9 +61,10 @@ class MachineLearning:
                 layers.Dense(1, activation='sigmoid')
             ])
 
-            model.compile(optimizer='adam',
-                          loss='binary_crossentropy', metrics=['accuracy'])
-            model.fit(X_emb, y, epochs=5)
+            model.compile(optimizer=optimizers.Adam(learning_rate=0.005),
+                          loss=losses.BinaryCrossentropy(),
+                          metrics=['accuracy'])
+            model.fit(X_emb, y, epochs=7)
 
             model.save(f"user_model_{user_id}.h5")
 
