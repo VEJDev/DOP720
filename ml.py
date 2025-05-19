@@ -44,10 +44,13 @@ class MachineLearning:
             positive = self.db.session.query(Procurement.text).filter(
                 Procurement.id.in_(liked_ids)
             ).all()
-
+            
+            negative_limit = int(len(positive) * 1.3)
+            
             negative = self.db.session.query(Procurement.text).filter(
                 ~Procurement.id.in_(liked_ids)
-            ).limit(11).all()
+            ).limit(negative_limit).all()
+                 #strādā labāk,kad negatīvie rezultāti ir nedaud vairāk par pozitīvajiem
 
             X = [text for (text,) in positive + negative]
             y = np.array([1] * len(positive) + [0] * len(negative))
