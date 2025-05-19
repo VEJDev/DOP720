@@ -1,61 +1,68 @@
-from sqlalchemy import Column, String, Integer, Text, LargeBinary, create_engine, DateTime, ForeignKey
+from flask import Flask, request, redirect, url_for, render_template, flash, get_flashed_messages
+
 import os
-from sqlalchemy.orm import declarative_base, relationship
+from models import Procurement
+from models import init_db
+from flask_sqlalchemy import SQLAlchemy # pip install Flask-SQLAlchemy
+from flask import render_template
+from scraper import ProcurementScraper
+from ml import MachineLearning
 
-Base = declarative_base()
+from werkzeug.security import generate_password_hash
+from sqlalchemy.exc import IntegrityError
+from models import User
 
-def init_db():
-    engine = create_engine("sqlite:///{}".format(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.db")))
-    Base.metadata.create_all(engine)
+app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///{}".format(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.db"))
+db = SQLAlchemy(app)
+scraper = ProcurementScraper(db, app)
+ml = MachineLearning(db, app)
+app.secret_key = 'f3ac29d2b0c145b7ad03cfbde72a7810'
 
-class Procurement(Base):
+@app.route('/')
+def home():
+    return redirect(url_for('login'))
 
-    __tablename__ = "Procurements"
+@app.route('/login')
+def login():
+    return render_template('login.html')
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    status = Column(Text, nullable=False)
-    text = Column(Text, nullable=False)
-    link = Column(Text, nullable=False)
-    customer = Column(Text, nullable=False)
-    deadline = Column(DateTime)
 
-    selected_by_users_link = relationship("UserProcurement", back_populates="procurement")
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        email = request.form['email'].strip()
+        password = request.form['password']
 
-    def __init__(self, status, text, link, customer, deadline):
-        self.status = status
-        self.text = text
-        self.link = link
-        self.customer = customer
-        self.deadline = deadline
+        hashed_password = generate_password_hash(password)
+        new_user = User(username=username, email=email,
+                        password=hashed_password, model=None)
 
-class User(Base):
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+            flash('Registration successful!', 'success')
+            return redirect('/login')
+        except IntegrityError:
+            db.session.rollback()
+            flash('Username or email already exists!', 'error')
 
-    __tablename__ = "Users"
+    return render_template('register.html')
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    username = Column(String(16), nullable=False, unique=True)
-    email = Column(Text, nullable=False, unique=True)
-    password = Column(Text, nullable=False)
-    model = Column(LargeBinary, nullable=True)
+@app.route('/training')
+def training():
+    return render_template('training.html')
 
-    selected_procurements_link = relationship("UserProcurement", back_populates="user")
+@app.route('/suggestions')
+def suggestions():
+    return render_template('suggestions.html')
 
-    def __init__(self, username, email, password, model):
-        self.username = username
-        self.email = email
-        self.password = password
-        self.model = model
+@app.route('/profile')
+def profile():
+    return render_template('profile.html')
 
-# Kad lietotājs apmāca modeli, šeit būtu jāpiefiksē kurus iepirkumus vairs nebūtu jārāda apmācības sadaļā.
-class UserProcurement(Base):
-    __tablename__ = "UserProcurements"
-
-    user_id = Column(Integer, ForeignKey("Users.id"), primary_key=True)
-    procurement_id = Column(Integer, ForeignKey("Procurements.id"), primary_key=True)
-
-    user = relationship("User", back_populates="selected_procurements_link")
-    procurement = relationship("Procurement", back_populates="selected_by_users_link")
-
-    def __init__(self, user_id, procurement_id):
-        self.user_id = user_id
-        self.procurement_id = procurement_id
+if __name__ == '__main__':
+    init_db()
+    app.run(debug=True)
+    # scraper.run()
