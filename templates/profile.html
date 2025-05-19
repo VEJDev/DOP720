@@ -11,15 +11,15 @@
         {% include "header.html" %}
         <div class="container-center" style="padding: 20px;">
             <div class="container-blue" style="width: 320px;">
-                <h2 style="text-decoration: underline;">Lietotājvārds</h2>
-                <button id="logout-btn" class="regular-btn">Iziet</button>
+                <h2 style="text-decoration: underline;">{{username}}</h2>
+                <button id="logout-btn" class="regular-btn" onclick="window.location.href='/logout';">Iziet</button>
             </div>
             <div class="container-red" style="width: 320px;">
                 <h2>Darbības ar Profilu</h2>
                 <p>Ja uzņēmuma intereses mainās, ir iespēja pārmācīt modeli, lai tas neņemtu vērā iepriekšējos interesējošos iepirkumus.</p>
-                <button id="reset-btn" class="regular-btn">Pārmācīt Modeli</button>
+                <button id="reset-btn" class="regular-btn" onclick="window.location.href='/retrain'; return confirm('Vai tiešām vēlaties pārmācīt modeli?');">Pārmācīt Modeli</button>
                 <p>Dzēšot kontu, to nebūs iespējams atjaunot, neizveidojot jaunu kontu</p>
-                <button id="delete-btn" class="regular-btn">Dzēst Kontu</button>
+                <button id="delete-btn" class="regular-btn" onclick="window.location.href='/deleteprofile'; return confirm('Vai tiešām vēlaties izdzēst kontu?');">Dzēst Kontu</button>
             </div>
         </div>
     </body>

@@ -2,7 +2,7 @@ from main import app, db
 from ml import MachineLearning
 import traceback
 #python test_ml.py
-if __name__ == '__main__':
+'''if __name__ == '__main__':
     try:
         ml = MachineLearning(db, app)
 
@@ -24,4 +24,4 @@ if __name__ == '__main__':
 
     except Exception as e:
         print(f"Error: {str(e)}")
-        traceback.print_exc()
+        traceback.print_exc()'''

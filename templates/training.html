@@ -10,42 +10,61 @@
     <body>
         {% include "header.html" %}
         <div class="container-center" style="padding: 20px;">
+            {% if total_records > 0 %}
+            <form method="POST" action="{{ url_for('training') }}">
+                <div class="container-center" style="flex: 0 0 auto;">
+                    <h2>Modeļa apmācība</h2>
+                    <p style="margin: 0px;">Atzīmējiet interesējošos pasūtījumus un pēc katras lapas spiediet "Apmācīt".</p>
+                </div>
+                <div class="container-center">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Statuss</th>
+                                <th>Iepirkums</th>
+                                <th>Pasūtītājs</th>
+                                <th>Termiņš</th>
+                                <th>Interesē</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for procurement in procurements %}
+                                <tr>
+                                    <td>{{ procurement.status }}</td>
+                                    <td><a href="{{ procurement.link }}">{{ procurement.text }}</a></td>
+                                    <td>{{ procurement.customer }}</td>
+                                    <td>{{ procurement.deadline }}</td>
+                                    <td>
+                                        <input type="checkbox" class="checkbox" value="{{ procurement.id }}" name="selected_records">
+                                        <input type="hidden" name="all_records" value="{{ procurement.id }}">
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="container-center" style="flex: 0 0 auto;">
+                    <button id="train-btn" class="regular-btn">Apmācīt</button>
+                </div>
+            </form>
             <div class="container-center" style="flex: 0 0 auto;">
-                <h2>Modeļa apmācība</h2>
-                <p style="margin: 0px;">Atzīmējiet interesējošos pasūtījumus un pēc katras lapas spiediet "Apmācīt".</p>
-            </div>
-            <div class="container-center">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Statuss</th>
-                            <th>Iepirkums</th>
-                            <th>Pasūtītājs</th>
-                            <th>Termiņš</th>
-                            <th>Interesē</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Izsludināts</td>
-                            <td><a href="https://www.eis.gov.lv/EKEIS/Supplier/Procurement/147612">Publicitātes materiālu izstrādes un izvietošanas pakalpojumi medijos un citos informatīvajos kanālos Latgales plānošanas reģiona vajadzībām</a></td>
-                            <td>Latgales plānošanas reģions (90002181025)</td>
-                            <td>2025-05-30</td>
-                            <td>
-                                <input type="checkbox" class="checkbox">
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="container-center" style="flex: 0 0 auto;">
-                <button id="train-btn" class="regular-btn">Apmācīt</button>
                 <div class="container-center" style="flex-direction: row;">
+                {% if page > 1 %}
+                    <button id="previous-btn" class="blue-btn" style="padding: 12px 16px;" onclick="window.location.href='{{ url_for('training', page=page-1) }}';">&lt;</button>
+                {% else %}
                     <button id="previous-btn" class="gray-btn" style="padding: 12px 16px;">&lt;</button>
-                    <p>0-20 no 195</p>
-                    <button id="next-btn" class="blue-btn" style="padding: 12px 16px;">&gt;</button>
+                {% endif %}
+                <p>Lapa: {{ page }}</p>
+                {% if page < total_pages %}
+                    <button id="next-btn" class="blue-btn" style="padding: 12px 16px;" onclick="window.location.href='{{ url_for('training', page=page+1) }}';">&gt;</button>
+                {% else %}
+                    <button id="next-btn" class="gray-btn" style="padding: 12px 16px;">&gt;</button>
+                {% endif %}
                 </div>
             </div>
+            {% else %}
+                <h2>Neviens iepirkums netika atrasts.</h2>
+            {% endif %}
         </div>
     </body>
 </html>

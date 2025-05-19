@@ -39,45 +39,46 @@ class MachineLearning:
         embeddings = tf.reduce_mean(outputs.last_hidden_state, axis=1)
         return embeddings.numpy()
 
-    def train(self, user_id, liked_ids):
+    def train(self, user_id, liked_ids, disliked_ids):
         with self.app.app_context():
             positive = self.db.session.query(Procurement.text).filter(
                 Procurement.id.in_(liked_ids)
             ).all()
             
-            negative_limit = int(len(positive) * 1.3)
-            
             negative = self.db.session.query(Procurement.text).filter(
-                ~Procurement.id.in_(liked_ids)
-            ).limit(negative_limit).all()
-                 #strādā labāk,kad negatīvie rezultāti ir nedaud vairāk par pozitīvajiem
+                Procurement.id.in_(disliked_ids)
+            ).all()
 
             X = [text for (text,) in positive + negative]
             y = np.array([1] * len(positive) + [0] * len(negative))
 
             X_emb = self.get_bert_embeddings(X)
-            model = models.Sequential([
-                layers.Input(shape=(X_emb.shape[1],)),
-                layers.Dense(64, activation='relu'),
-                layers.Dropout(0.3),
-                layers.Dense(1, activation='sigmoid')
-            ])
 
-            model.compile(optimizer=optimizers.Adam(learning_rate=0.005),
-                          loss=losses.BinaryCrossentropy(),
-                          metrics=['accuracy'])
+            model = None
+            if self.db.session.query(User).filter_by(id=user_id).first().model is None:
+                model = models.Sequential([
+                    layers.Input(shape=(X_emb.shape[1],)),
+                    layers.Dense(64, activation='relu'),
+                    layers.Dropout(0.3),
+                    layers.Dense(1, activation='sigmoid')
+                ])
+
+                model.compile(optimizer=optimizers.Adam(learning_rate=0.005),
+                            loss=losses.BinaryCrossentropy(),
+                            metrics=['accuracy'])
+            else:
+                model_path = f"/ml_models/user_model_{user_id}.h5"
+                if not tf.io.gfile.exists(model_path):
+                    raise ValueError(f"Modelis lietotājam {user_id} nav saglabāts")
+                model = models.load_model(model_path)
+
             model.fit(X_emb, y, epochs=7)
 
-            model.save(f"user_model_{user_id}.h5")
+            model.save(f"ml_models/user_model_{user_id}.h5")
+            self.db.session.query(User).filter_by(id=user_id).update({User.model: True})
+            self.db.session.commit()
 
-    def predict(self, user_id, procurement_text):
-        model_path = f"user_model_{user_id}.h5"
-        if not tf.io.gfile.exists(model_path):
-            raise ValueError(f"Modelis lietotājam {user_id} nav saglabāts")
-
-        model = models.load_model(model_path)
-
+    def predict(self, model, procurement_text):
         emb = self.get_bert_embeddings([procurement_text])
-
         pred = model.predict(emb)
         return pred[0][0]

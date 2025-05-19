@@ -11,21 +11,31 @@
         <div class="container-center">
             <div class="container-blue" style="width: 320px;">
                 <h2 class="h1-blue">Ienākt</h2>
-                <div class="container-left">
-                    <div>
-                        <label for="email">E-pasts</label>
-                        <div class="input-wrapper">
-                            <input type="email" id="email" placeholder="E-pasts" required class="input-box">
+                <form method="POST" action="{{ url_for('login') }}">
+                    <div class="container-left">
+                        <div>
+                            <label for="email">E-pasts</label>
+                            <div class="input-wrapper">
+                                <input type="email" id="email" name="email" placeholder="E-pasts" required class="input-box">
+                            </div>
                         </div>
+                        <div>
+                            <label for="password">Parole</label>
+                            <div class="input-wrapper">
+                                <input type="password" id="password" name="password" placeholder="Parole" required class="input-box">
+                            </div>
                     </div>
-                    <div>
-                        <label for="password">Parole</label>
-                        <div class="input-wrapper">
-                            <input type="password" id="password" placeholder="Parole" required class="input-box">
+                    {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                        {% for msg in messages %}
+                          {{ msg }}
+                        {% endfor %}
                         </div>
-                    </div>
-                </div>
-                <button id="login-btn" class="regular-btn">Ienākt</button>
+                    {% endif %}
+                    {% endwith %}
+                    <div class = "container-center"><button type="submit" class="regular-btn">Ienākt</button></div>
+                </form>
                 <p>Nav konta? <a href="/register">Reģistrēties</a></p>
             </div>
         </div>

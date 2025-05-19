@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Text, LargeBinary, create_engine, DateTime, ForeignKey
+from sqlalchemy import Column, String, Integer, Text, Boolean, create_engine, DateTime, ForeignKey
 import os
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -36,7 +36,7 @@ class User(Base):
     username = Column(String(16), nullable=False, unique=True)
     email = Column(Text, nullable=False, unique=True)
     password = Column(Text, nullable=False)
-    model = Column(LargeBinary, nullable=True)
+    model = Column(Boolean, nullable=True)
 
     selected_procurements_link = relationship("UserProcurement", back_populates="user")
 

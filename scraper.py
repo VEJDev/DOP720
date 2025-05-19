@@ -98,14 +98,13 @@ class ProcurementScraper():
         global db, app
         db = database
         app = application
+        if (config["scraper"]["use"]):
+            scheduler_thread = threading.Thread(target=self.schedule_task)
+            scheduler_thread.daemon = True
+            scheduler_thread.start()
 
-    def schedule_task():
+    def schedule_task(self):
         while True:
             task_thread = threading.Thread(target=task)
             task_thread.start()
             time.sleep(86400)
-
-    if (config["scraper"]["use"]):
-        scheduler_thread = threading.Thread(target=schedule_task)
-        scheduler_thread.daemon = True
-        scheduler_thread.start()
