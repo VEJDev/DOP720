@@ -8,31 +8,46 @@
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/template.css') }}">
     </head>
     <body>
+
         <div class="container-center">
             <div class="container-blue" style="width: 320px;">
                 <h2 class="h1-blue">Reģistrēties</h2>
-                <div class="container-left">
+
+                <form method="POST" action="{{ url_for('register') }}" >
                     <div>
                         <label for="username">Lietotājvārds</label>
                         <div class="input-wrapper">
-                            <input type="text" id="username" placeholder="Lietotājvārds" required class="input-box">
+                            <input type="text" id="username" name="username" placeholder="Lietotājvārds" required class="input-box">
                         </div>
                     </div>
                     <div>
                         <label for="email">E-pasts</label>
                         <div class="input-wrapper">
-                            <input type="email" id="email" placeholder="E-pasts" required class="input-box">
+                            <input type="email" id="email" name="email" placeholder="E-pasts" required class="input-box">
                         </div>
                     </div>
                     <div>
                         <label for="password">Parole</label>
                         <div class="input-wrapper">
-                            <input type="password" id="password" placeholder="Parole" required class="input-box">
+                            <input type="password" id="password" name="password" placeholder="Parole" required class="input-box">
                         </div>
                     </div>
-                </div>
-                <button id="login-btn" class="regular-btn">Reģistrēties</button>
-                <p>Ir konts? <a href="/login">Ienākt</a></p>
+                    <br>
+                    {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        <div class="flash-messages">
+                        {% for msg in messages %}
+                          {{ msg }}
+                        {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% endwith %}
+                    <br>
+                    <div class = "container-center"><button type="submit" class="regular-btn">Reģistrēties</button></div>
+           
+                </form>
+                
+
             </div>
         </div>
     </body>
