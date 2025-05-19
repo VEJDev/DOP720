@@ -1,149 +1,69 @@
 import tempfile
 import numpy as np
-import pandas as pd
-import io
 import os
 import pickle
-import base64
-from models import User, Procurement, UserProcurement
-import keras
-from keras import layers, models, optimizers, losses
+
+from models import User, Procurement
+
 import tensorflow as tf
+# importē no tf-keras, ne no keras, ja gribi kopā ar BERT
+# pip install huggingface_hub[hf_xet], priekš labākas veiktspējas
+from tf_keras import layers, models, optimizers, losses
+from transformers import BertTokenizer, TFBertModel
 
 
-class MachineLearning():
-    RETRAIN_THRESHOLD = 200
+class MachineLearning:
+    RETRAIN_THRESHOLD = 500
 
-    def __init__(self, database, application):
-        self.db = database
-        self.app = application
+    def __init__(self, db, app):
+        self.db = db
+        self.app = app
+        self.model_name = "bert-base-multilingual-cased"
+        self.tokenizer = BertTokenizer.from_pretrained(self.model_name)
+        self.bert_model = TFBertModel.from_pretrained(self.model_name)
 
-    def train(self, user_id, liked_ids): # liked_ids kā pass in mainīgais, lai varēt iztestēt ar test_ml.py, pēc vajadzēs noņemt
+    def get_bert_embeddings(self, texts):
+        inputs = self.tokenizer(texts, padding=True,
+                                truncation=True, return_tensors="tf")
+        outputs = self.bert_model(inputs)
+        embeddings = tf.reduce_mean(outputs.last_hidden_state, axis=1)
+        return embeddings.numpy()
+
+    def train(self, user_id, liked_ids):
         with self.app.app_context():
-            # pēc tam kad būs nepieciešams ņemt no datubāzes: 
-            # liked_ids = self.db.session.query(
-            #     UserProcurement.procurement_id).filter_by(user_id=user_id).all()
-            # liked_ids = [id for (id,) in liked_ids]
-            positive = self.db.session.query(Procurement.text, Procurement.customer).filter(
+            positive = self.db.session.query(Procurement.text).filter(
                 Procurement.id.in_(liked_ids)
             ).all()
 
-            negative = self.db.session.query(Procurement.text, Procurement.customer).filter(
+            negative = self.db.session.query(Procurement.text).filter(
                 ~Procurement.id.in_(liked_ids)
             ).limit(len(positive)).all()
 
-            X = [f"{text} {customer}" for text,
-                 customer in positive + negative]
-            y = [1] * len(positive) + [0] * len(negative)
+            X = [text for (text,) in positive + negative]
+            y = np.array([1] * len(positive) + [0] * len(negative))
 
-            encoder = layers.TextVectorization(max_tokens=2000)
-            encoder.adapt(tf.convert_to_tensor(X, dtype=tf.string))
+            X_emb = self.get_bert_embeddings(X)
+            model = models.Sequential([
+                layers.Input(shape=(X_emb.shape[1],)),
+                layers.Dense(64, activation='relu'),
+                layers.Dropout(0.3),
+                layers.Dense(1, activation='sigmoid')
+            ])
 
-            X_tensor = tf.convert_to_tensor(X, dtype=tf.string)
-            y_tensor = tf.convert_to_tensor(y, dtype=tf.int32)
+            model.compile(optimizer='adam',
+                          loss='binary_crossentropy', metrics=['accuracy'])
+            model.fit(X_emb, y, epochs=5)
 
-            model_data = self.getModel(user_id)
-
-            if model_data is None or len(X) < self.RETRAIN_THRESHOLD:
-                model = models.Sequential([
-                    layers.Embedding(input_dim=len(encoder.get_vocabulary()),
-                                     output_dim=32,
-                                     mask_zero=True),
-                    layers.LSTM(32),
-                    layers.Dense(32, activation='relu'),
-                    layers.Dropout(0.4),
-                    layers.Dense(1, activation='sigmoid')
-                ])
-
-                model.compile(optimizer=optimizers.Adam(learning_rate=0.005),
-                              loss=losses.BinaryCrossentropy(),
-                              metrics=['accuracy'])
-
-                X_encoded = encoder(X_tensor)
-                model.fit(X_encoded, y_tensor, epochs=5)
-            else:
-                model, encoder = self.deserialize_model_data(model_data)
-
-                X_encoded = encoder(X_tensor)
-                model.fit(X_encoded, y_tensor, epochs=5)
-
-            self.saveModel(user_id, model, encoder)
+            model.save(f"user_model_{user_id}.h5")
 
     def predict(self, user_id, procurement_text):
-        model_data = self.getModel(user_id)
-        if model_data is None:
-            raise ValueError(f"No model found for user {user_id}")
+        model_path = f"user_model_{user_id}.h5"
+        if not tf.io.gfile.exists(model_path):
+            raise ValueError(f"Modelis lietotājam {user_id} nav saglabāts")
 
-        model, encoder = self.deserialize_model_data(model_data)
+        model = models.load_model(model_path)
 
-        input_text = tf.convert_to_tensor([procurement_text], dtype=tf.string)
+        emb = self.get_bert_embeddings([procurement_text])
 
-        encoded_input = encoder(input_text)
-        return model.predict(encoded_input)
-
-    def saveModel(self, user_id, model, encoder):
-        with self.app.app_context():
-            existing = self.db.session.query(
-                User).filter_by(id=user_id).first()
-            if existing:
-                model_data = self.serialize_model_data(model, encoder)
-                self.db.session.query(User).filter(User.id == user_id).update({
-                    User.model: model_data
-                })
-                self.db.session.commit()
-
-    def getModel(self, user_id):
-        with self.app.app_context():
-            user = self.db.session.query(User).filter(
-                User.id == user_id).first()
-            if user:
-                return user.model
-            return None
-
-    def serialize_model_data(self, model, encoder):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            model_path = os.path.join(tmpdir, "model_weights.weights.h5")
-            model.save_weights(model_path)
-
-            with open(model_path, "rb") as f:
-                model_bytes = f.read()
-
-            encoder_config = encoder.get_config()
-            vocab = encoder.get_vocabulary()
-
-            data = {
-                "model_bytes": model_bytes,
-                "model_config": model.get_config(),
-                "encoder_config": encoder_config,
-                "encoder_vocab": vocab
-            }
-
-            serialized = pickle.dumps(data)
-            return serialized
-
-    def deserialize_model_data(self, model_data):
-        data = pickle.loads(model_data)
-
-        model_bytes = data["model_bytes"]
-        model_config = data["model_config"]
-        encoder_config = data["encoder_config"]
-        vocab = data["encoder_vocab"]
-
-        encoder = layers.TextVectorization.from_config(encoder_config)
-        encoder.set_vocabulary(vocab)
-
-        model = keras.Sequential.from_config(model_config)
-        model.compile(optimizer=optimizers.Adam(learning_rate=0.005),
-                      loss=losses.BinaryCrossentropy(),
-                      metrics=['accuracy'])
-
-        with tempfile.NamedTemporaryFile(suffix='.weights.h5', delete=False) as tmp:
-            tmp.write(model_bytes)
-            tmp_path = tmp.name
-
-        try:
-            model.load_weights(tmp_path)
-            return model, encoder
-        finally:
-            if os.path.exists(tmp_path):
-                os.unlink(tmp_path)
+        pred = model.predict(emb)
+        return pred[0][0]
