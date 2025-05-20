@@ -185,6 +185,7 @@ def suggestions(page=1):
 
     except Exception as e:
         error_text = "Modelis nav apmācīts"
+        total_count = 0
         print(f"An error occurred: {e}")
 
     return render_template('suggestions.html', procurements=output_procurements, page=page, total_pages=total_pages, start_index=start_index, end_index=end_index, total_records=total_count, error_text=error_text)
