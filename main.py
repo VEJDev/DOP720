@@ -168,12 +168,9 @@ def suggestions(page=1):
     error_text = "Neviens iepirkums netika atrasts."
 
     user_id = session.get('user_id', None)
-    model_path = f"ml_models/user_model_{user_id}.h5"
-    if not tf.io.gfile.exists(model_path):
-        raise ValueError(f"Modelis lietotājam {user_id} nav saglabāts")
-    model = models.load_model(model_path)
-
     try:
+        model_path = f"ml_models/user_model_{user_id}.h5"
+        model = models.load_model(model_path)
         for procurement in procurements:
             if ml.predict(model=model, procurement_text=procurement.text) >= 0.5:
                 if total_count >= start_index and total_count <= end_index:
@@ -188,7 +185,6 @@ def suggestions(page=1):
     total_pages = (total_count // 20) + (1 if total_count % 20 > 0 else 0)
 
     return render_template('suggestions.html', procurements=output_procurements, page=page, total_pages=total_pages, start_index=start_index, end_index=end_index, total_records=total_count, error_text=error_text)
-
 @app.route('/profile')
 def profile():
     if 'username' not in session:
