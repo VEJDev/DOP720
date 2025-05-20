@@ -279,6 +279,10 @@ tr:hover {
     background-color: #e0dfff;
 }
 
+tr.suggested {
+    background-color: #a1e697 !important;
+}
+
 table {
     margin: 20px 0;
     max-width: 80%;

@@ -54,7 +54,7 @@
                 {% else %}
                     <button id="previous-btn" class="gray-btn" style="padding: 12px 16px;">&lt;</button>
                 {% endif %}
-                <p>Lapa: {{ page }}</p>
+                <p>Lapa: {{ page }} no {{ total_pages }}</p>
                 {% if page < total_pages %}
                     <button id="next-btn" class="blue-btn" style="padding: 12px 16px;" onclick="window.location.href='{{ url_for('training', page=page+1) }}';">&gt;</button>
                 {% else %}

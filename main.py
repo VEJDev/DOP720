@@ -156,33 +156,36 @@ def training(page=1):
 def suggestions(page=1):
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    
     current_time = datetime.now()
-    procurements = db.session.query(Procurement).filter(Procurement.deadline > current_time).all()
-
     start_index = (page - 1) * 20
     end_index = start_index + 20 - 1
 
-    total_count = 0
+    procurements = db.session.query(Procurement).filter(Procurement.deadline > current_time) \
+        .limit(20) \
+        .offset(start_index) \
+        .all()
+
+    total_count = db.session.query(Procurement).filter(Procurement.deadline > current_time).count()
+    total_pages = (total_count // 20) + (1 if total_count % 20 > 0 else 0)
+    
     output_procurements = []
+    user_id = session.get('user_id', None)
 
     error_text = "Neviens iepirkums netika atrasts."
 
-    user_id = session.get('user_id', None)
     try:
         model_path = f"ml_models/user_model_{user_id}.h5"
         model = models.load_model(model_path)
         for procurement in procurements:
-            if ml.predict(model=model, procurement_text=procurement.text) >= 0.5:
-                if total_count >= start_index and total_count <= end_index:
-                    output_procurements.append(procurement)
-                total_count += 1
-                if (total_count > 20):
-                    break
+            output_procurements.append({
+                'procurement': procurement,
+                'score': round(ml.predict(model=model, procurement_text=procurement.text), 2)
+            })
+
     except Exception as e:
         error_text = "Modelis nav apmācīts"
         print(f"An error occurred: {e}")
-        
-    total_pages = (total_count // 20) + (1 if total_count % 20 > 0 else 0)
 
     return render_template('suggestions.html', procurements=output_procurements, page=page, total_pages=total_pages, start_index=start_index, end_index=end_index, total_records=total_count, error_text=error_text)
 @app.route('/profile')
