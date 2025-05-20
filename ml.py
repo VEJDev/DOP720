@@ -42,12 +42,15 @@ class MachineLearning:
     def train(self, user_id, liked_ids, disliked_ids):
         with self.app.app_context():
             positive = self.db.session.query(Procurement.text).filter(
-                Procurement.id.in_(liked_ids)
+               Procurement.id.in_(liked_ids)
             ).all()
-            
+           
+            max_negatives = int(len(positive) * 3)
+
             negative = self.db.session.query(Procurement.text).filter(
                 Procurement.id.in_(disliked_ids)
-            ).all()
+            ).limit(max_negatives).all()
+
 
             X = [text for (text,) in positive + negative]
             y = np.array([1] * len(positive) + [0] * len(negative))
