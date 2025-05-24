@@ -1,9 +1,20 @@
 <header>
     <div class="header-left">
         <a href="/suggestions">Aktuālie Piedāvājumi</a>
-        <a href="/training">Modeļa Apmācība</a>
+        <a href="/training" id="training-link">Modeļa Apmācība</a>
     </div>
     <div>
         <a href="/profile">Profils</a>
     </div>
 </header>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const trainingLink = document.getElementById("training-link");
+        if (trainingLink) {
+            trainingLink.addEventListener("click", function () {
+                localStorage.clear();
+            });
+        }
+    });
+</script>
