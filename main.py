@@ -16,6 +16,10 @@ from models import User
 
 import tensorflow as tf
 from tf_keras import models
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///{}".format(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.db"))
@@ -69,13 +73,22 @@ def deleteprofile():
 def retrain():
     if 'user_id' in session and 'username' in session:
         try:
-            user = db.session.query(User).filter_by(id=session.get('user_id', None)).first()
+            user_id = session.get('user_id')
+            user = db.session.query(User).filter_by(id=user_id).first()
             user.model = None
-            db.session.query(UserProcurement).filter_by(user_id=session.get('user_id', None)).delete()
+            db.session.query(UserProcurement).filter_by(
+                user_id=user_id).delete()
             db.session.commit()
-            return redirect(url_for('training'))
-        except Exception as e: print(e)
-    return redirect(url_for('login'))
+
+            model_path = f"ml_models/user_model_{user_id}.h5"
+            if os.path.exists(model_path):
+                os.remove(model_path)           
+            return redirect(url_for('profile'))
+
+        except Exception as e:
+            print(e)
+    else:
+        return redirect(url_for('login'))
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -108,10 +121,16 @@ def training(page=1):
     
     if request.method == 'POST':
         selected_records = request.form.getlist('selected_records')
+        
+        
         all_records = request.form.getlist('all_records')
         selected_records = [int(record_id) for record_id in selected_records]
         all_records = [int(record_id) for record_id in all_records]
         unselected_records = [record_id for record_id in all_records if record_id not in selected_records]
+        
+        logger.debug(f"{selected_records} seleecteddd")
+        logger.debug(f"{unselected_records} unselected_records")
+
         
         user_procurements = [
             {'user_id': session.get('user_id', None), 'procurement_id': record}
@@ -197,4 +216,4 @@ def profile():
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=False)
+    app.run(debug=True)
