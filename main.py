@@ -25,7 +25,7 @@ app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///{}".format(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.db"))
 db = SQLAlchemy(app)
 ml = MachineLearning(db, app)
-app.secret_key = 'f3ac29d2b0c145b7ad03cfbde72a7810'
+app.secret_key = '' # Enter your own secret key
 scraper = ProcurementScraper(db, app)
 
 @app.route('/')
@@ -217,3 +217,4 @@ def profile():
 if __name__ == '__main__':
     init_db()
     app.run(debug=True)
+
