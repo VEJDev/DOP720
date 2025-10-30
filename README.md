@@ -1,4 +1,7 @@
-DOP720 Grupas darba projekts.
+### DOP720 Grupas darba projekts.
+Mājaslapa, kas, izmantojot mākslīgo intelektu, spēj ieteikt lietotājam potenciāli interesējošus Elektroniskās iepirkumu sistēmas (EIS) valsts iestāžu izsludinātos iepirkumus, balstoties uz iepriekš atzīmētiem, interesējošiem iepirkumiem.
+
+---
 
 -- Docker --
 
